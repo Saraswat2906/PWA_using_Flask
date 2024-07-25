@@ -1,58 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pipe Counter</title>
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="./LnT.png">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    .container {
-      max-width: 800px;
-      margin: auto;
-    }
-    .loading-indicator {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 24px;
-      color: #333;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipe Counter</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="/static/LnT.png">
+    <meta name="theme-color" content="#4CAF50">
 </head>
 <body>
-  <div class="container">
-    <h1>Pipe Counter</h1>
-    <p>Welcome to Pipe Counter, an app to count pipes in images and videos.</p>
-    <p>Use the app to upload photos or videos and detect objects.</p>
-    <div class="loading-indicator">
-      <i class="fas fa-spinner fa-spin"></i>
-      Loading...
-    </div>
-  </div>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/UI/service-worker.js')
-          .then(registration => {
-            console.log('Service Worker registered successfully:', registration);
-            // Hide the loading indicator
-            document.querySelector('.loading-indicator').style.display = 'none';
-          })
-          .catch(error => {
-            console.log('Service Worker registration failed:', error);
-          });
-      });
-    } else {
-      // Fallback for older browsers
-      document.querySelector('.loading-indicator').innerHTML = 'Your browser does not support PWAs. Please use a modern browser.';
-    }
-  </script>
+    <header>
+        <h1>PIPE COUNTER</h1>
+    </header>
+    <main>
+        <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+            <div class="upload-type">
+                <h2>What do you want to upload?</h2>
+                <label>
+                    <input type="radio" name="upload_type" value="Photos" checked> Photos
+                </label>
+                <label>
+                    <input type="radio" name="upload_type" value="Videos"> Videos
+                </label>
+            </div>
+            <div id="photo-options" class="options">
+                <h2>Select photo source</h2>
+                <label>
+                    <input type="radio" name="photo_source" value="Upload from gallery" checked> Upload from gallery
+                </label>
+                <label>
+                    <input type="radio" name="photo_source" value="Camera"> Camera
+                </label>
+                <div id="gallery-upload" class="upload">
+                    <input type="file" id="image-upload" name="file" accept="image/*">
+                </div>
+            </div>
+            <div id="video-options" class="options" style="display: none;">
+                <h2>Select a video</h2>
+                <input type="file" id="video-upload" accept="video/mp4">
+                <video id="uploaded-video" controls style="display: none;"></video>
+            </div>
+            <button id="detect-btn" type="submit">Detect Objects</button>
+        </form>
+        <img id="output-image" alt="Output Image" style="display: none;">
+    </main>
+    <script src="/static/script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch(error => {
+                console.log('Service Worker registration failed:', error);
+            });
+        }
+    </script>
 </body>
 </html>
