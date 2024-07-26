@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    
+    
+    <link rel="manifest" href="/manifest.json">
+    
+    <meta name="theme-color" content="#4CAF50">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask Camera and Photo Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .top-container {
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #555;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .container {
+            width: 80%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid #ccc;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        #left-container img,
+        #right-container img {
+            width: 100%;
+        }
+        @media (min-width: 768px) {
+            .main-container {
+                flex-direction: row;
+            }
+            .container {
+                width: 30%;
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-container">
+        <button class="button" id="camera-option">Camera</button>
+        <button class="button" id="photos-option">Photos</button>
+    </div>
+    <div class="main-container">
+        <div class="container" id="left-container">
+            <!-- Content will be inserted here -->
+        </div>
+        <div class="container">
+            <button class="button" id="detect-button">Detect</button>
+        </div>
+        <div class="container" id="right-container">
+            <!-- Processed image will be displayed here -->
+        </div>
+    </div>
+ 
+    <script>
+        const cameraOption = document.getElementById('camera-option');
+        const photosOption = document.getElementById('photos-option');
+        const leftContainer = document.getElementById('left-container');
+        const detectButton = document.getElementById('detect-button');
+        const rightContainer = document.getElementById('right-container');
+ 
+        let currentImage = null;
+ 
+        cameraOption.addEventListener('click', () => {
+            leftContainer.innerHTML = `
+                <video id="video" width="100%" autoplay></video>
+                <button class="button" id="capture-button">Capture</button>
+            `;
+            const video = document.getElementById('video');
+            const captureButton = document.getElementById('capture-button');
+ 
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                });
+ 
+            captureButton.addEventListener('click', () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                currentImage = canvas.toDataURL('image/jpeg');
+                leftContainer.innerHTML = `<img src="${currentImage}" alt="Captured Image">`;
+            });
+        });
+ 
+        photosOption.addEventListener('click', () => {
+            leftContainer.innerHTML = `
+                <input type="file" id="file-input" accept="image/*">
+            `;
+            const fileInput = document.getElementById('file-input');
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    currentImage = e.target.result;
+                    leftContainer.innerHTML = `<img src="${currentImage}" alt="Selected Image">`;
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+        
+ 
+        detectButton.addEventListener('click', () => {
+            if (!currentImage) return alert('Please select an image first.');
+
+            if (currentImage.startsWith('data:image')) {
+                fetch('/capture', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ image: currentImage }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    rightContainer.innerHTML = `<img src="data:image/jpeg;base64,${data.result}" alt="Processed Image">`;
+                });
+            } else {
+                const data = new FormData();
+                data.append('file', document.getElementById('file-input').files[0]);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: data,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    rightContainer.innerHTML = `<img src="data:image/jpeg;base64,${data.result}" alt="Processed Image">`;
+                });
+            }
+        });
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch(error => {
+                console.log('Service Worker registration failed:', error);
+            });
+        }
+    </script>
+</body>
+</html>
