@@ -293,3 +293,4 @@ wheel==0.43.0
 widgetsnbextension==4.0.10
 wrapt==1.16.0
 flask
+cv2
